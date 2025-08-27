@@ -78,7 +78,7 @@ def dev_choice_api():
     """Выбор dev-кошелька с API из dev_wallets_with_api.db"""
     conn = sqlite3.connect(DEV_API_DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, name, address, private_key, api_key FROM dev_wallets_api")
+    cur.execute("SELECT id, name, address, private_key, api_key FROM dev_wallets_with_api")
     rows = cur.fetchall()
     conn.close()
 
