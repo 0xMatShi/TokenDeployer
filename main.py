@@ -6,7 +6,6 @@ from src.balance_checker import balance_checker_menu
 from src.devwallet_creation import dev_wallet_creation
 from src.buywallets_creation import buy_wallets_creation
 from src.logger import logger
-from src.auth.auth import check_password
 from src.edit_wallets import edit_wallets_menu
 
 
