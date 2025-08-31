@@ -81,6 +81,7 @@ async def trade_token(wallet: dict, mint: str, action: str):
 
     if action == "buy":
         amount_sol = max(0.00101, round(random.uniform(0.00101, 0.00301), 6))
+        # amount_sol = "0.001"  # фиксированная сумма для покупки
         denominated_in_sol = "true"
         logger.info(f"[{public_key}] Покупка токена на {amount_sol} SOL")
     else:
@@ -89,47 +90,55 @@ async def trade_token(wallet: dict, mint: str, action: str):
         logger.info(f"[{public_key}] Продажа 100% токенов на buyer-кошельке")
 
     try:
-        response = requests.post(url=PUMP_URL, data={
-            "publicKey": public_key,
-            "action": action,
-            "mint": mint,
-            "amount": amount_sol,
-            "denominatedInSol": denominated_in_sol,
-            "slippage": 30,
-            "priorityFee": 0.00001,
-            "pool": "pump"
-        })
+        async with aiohttp.ClientSession() as session:
+            # --- pump.fun запрос ---
+            async with session.post(
+                url=PUMP_URL,
+                data={
+                    "publicKey": public_key,
+                    "action": action,
+                    "mint": mint,
+                    "amount": amount_sol,
+                    "denominatedInSol": denominated_in_sol,
+                    "slippage": 30,
+                    "priorityFee": 0.00005,
+                    "pool": "pump"
+                }
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logger.error(f"[{public_key}] Ошибка запроса к pump.fun: {text}")
+                    return
+                content = await resp.read()
 
-        if response.status_code != 200:
-            logger.error(f"[{public_key}] Ошибка запроса к pump.fun: {response.text}")
-            return
+            # --- формируем транзакцию ---
+            try:
+                tx = VersionedTransaction(
+                    VersionedTransaction.from_bytes(content).message,
+                    [private_key]
+                )
+            except Exception as e:
+                logger.error(f"[{public_key}] Ошибка формирования транзакции: {e}")
+                return
 
-        try:
-            tx = VersionedTransaction(
-                VersionedTransaction.from_bytes(response.content).message,
-                [private_key]
-            )
-        except Exception as e:
-            logger.error(f"[{public_key}] Ошибка формирования транзакции: {e}")
-            return
+            # --- отправляем в Solana RPC ---
+            commitment = CommitmentLevel.Confirmed
+            config = RpcSendTransactionConfig(preflight_commitment=commitment)
 
-        commitment = CommitmentLevel.Confirmed
-        config = RpcSendTransactionConfig(preflight_commitment=commitment)
+            async with session.post(
+                url=RPC_URL,
+                headers={"Content-Type": "application/json"},
+                data=SendVersionedTransaction(tx, config).to_json()
+            ) as rpc_resp:
+                rpc_json = await rpc_resp.json()
 
-        rpc_response = requests.post(
-            url=RPC_URL,
-            headers={"Content-Type": "application/json"},
-            data=SendVersionedTransaction(tx, config).to_json()
-        )
-        rpc_json = rpc_response.json()
-
-        if "result" in rpc_json and rpc_json["result"]:
-            tx_signature = rpc_json["result"]
-            logger.info(f"[{public_key}] {action.upper()} tx: https://solscan.io/tx/{tx_signature}")
-        else:
-            error_msg = rpc_json.get("error", {}).get("message", "Неизвестная ошибка")
-            logger.error(f"[{public_key}] Ошибка отправки транзакции: {error_msg}")
-            logger.warning(f"[{public_key}] Ответ RPC: {rpc_json}")
+            if "result" in rpc_json and rpc_json["result"]:
+                tx_signature = rpc_json["result"]
+                logger.info(f"[{public_key}] {action.upper()} tx: https://solscan.io/tx/{tx_signature}")
+            else:
+                error_msg = rpc_json.get("error", {}).get("message", "Неизвестная ошибка")
+                logger.error(f"[{public_key}] Ошибка отправки транзакции: {error_msg}")
+                logger.warning(f"[{public_key}] Ответ RPC: {rpc_json}")
 
     except Exception as e:
         logger.error(f"[{public_key}] Фатальная ошибка при {action}: {e}")

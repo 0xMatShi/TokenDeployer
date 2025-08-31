@@ -1,6 +1,5 @@
 import os
 import sqlite3
-import requests
 from tabulate import tabulate
 from InquirerPy import inquirer
 from src.logger import logger

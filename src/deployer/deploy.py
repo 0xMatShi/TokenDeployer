@@ -138,11 +138,17 @@ def platform_choice():
     
     if portal_choice == "[+] Pump.fun":
         logger.info(f"\n[+] Выбрана площадка: {portal_choice}")
-        # buyer_keypairs = buyer_group_choice()
-        # signer_keypair = dev_choice()
-        # mint_keypair = "9ADoMeegweLhVZNsWopueT1mr8ivdYPmV5e3R4d3pump" 
-        # asyncio.run(start_trading(buyer_keypairs, signer_keypair, mint_keypair)) #Для тестов покупок/продаж
-        deploy_buy_and_sell_pump()
+        dev_wallet, dev_type = dev_choice_menu()
+        if dev_type == "api":
+            signer_keypair = dev_wallet["keypair"]
+            api_key = dev_wallet["api_key"]
+        else:
+            signer_keypair = dev_wallet
+            api_key = None
+        buyer_keypairs = buyer_group_choice()
+        mint_keypair = "9ADoMeegweLhVZNsWopueT1mr8ivdYPmV5e3R4d3pump" 
+        asyncio.run(start_trading(buyer_keypairs, signer_keypair, mint_keypair)) #Для тестов покупок/продаж
+        # deploy_buy_and_sell_pump()
         input("\nНажмите Enter чтобы вернуться в меню...")
         
     elif portal_choice == "[+] Bonk.fun":
