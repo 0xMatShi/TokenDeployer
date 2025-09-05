@@ -4,3 +4,4 @@ __pycache__
 /src/deployer/__pycache__
 /accounts
 /logs
+/shared

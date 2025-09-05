@@ -1,0 +1,16 @@
+services:
+    vault:
+        cap_add:
+            - IPC_LOCK
+        environment:
+            - 'VAULT_LOCAL_CONFIG={"storage": {"file": {"path": "/vault/file"}},
+              "listener": [{"tcp": { "address": "0.0.0.0:8200", "tls_disable":
+              true}}], "default_lease_ttl": "168h", "max_lease_ttl": "720h",
+              "ui": true}'
+        ports:
+            - 8200:8200
+        image: hashicorp/vault
+        command: server
+        volumes:
+            - ./shared/vault/config/:/vault/config.d/
+            - ./shared/vault/file/:/vault/file/
