@@ -5,3 +5,5 @@ __pycache__
 /accounts
 /logs
 /shared
+.env
+/distributor/__pycache__

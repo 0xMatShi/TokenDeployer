@@ -13,7 +13,6 @@ import base58
 
 RPC_URL = "https://api.mainnet-beta.solana.com"
 PUMP_URL = "https://pumpportal.fun/api/trade-local"
-
 BUYER_DB_PATH = "./accounts/buyers/buyer_wallets.db"
 
 
@@ -40,7 +39,7 @@ def load_buyer_wallets(group_id: int):
 
 
 # === проверка готовности токена ===
-async def wait_for_token_ready(mint: str, retries: int = 1000, delay: float = 0.5):
+async def wait_for_token_ready(mint: str, retries: int = 1000000, delay: float = 0.1):
     url = RPC_URL
 
     async with aiohttp.ClientSession() as session:
@@ -196,8 +195,8 @@ async def mass_sell(wallets, mint: str):
 # === основной процесс ===
 async def start_trading(group_id: int, dev: Keypair, mint: str):
     wallets = load_buyer_wallets(group_id)
-    # mint_keypair = mint.pubkey() 
-    mint_keypair = mint
+    mint_keypair = mint.pubkey() 
+    # mint_keypair = mint
 
     logger.info(f"[+] Загружен dev-кошелёк: {dev.pubkey()}")
     logger.info(f"[+] Загружено {len(wallets)} buyer-кошельков")
